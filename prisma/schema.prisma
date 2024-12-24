@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" // หรือ "postgresql" ขึ้นอยู่กับฐานข้อมูลที่คุณใช้
+  url      = env("DATABASE_URL") // เพิ่ม URL ฐานข้อมูลในไฟล์ .env
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userBooks UserBook[]
+}
+
+model Book {
+  id          Int       @id @default(autoincrement())
+  title       String
+  author      String?
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  
+  userBooks   UserBook[]
+}
+
+model Category {
+  id    Int     @id @default(autoincrement())
+  name  String
+
+  books Book[]
+}
+
+model UserBook {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  status    Status @default(UNREAD)
+  
+  user      User   @relation(fields: [userId], references: [id])
+  book      Book   @relation(fields: [bookId], references: [id])
+}
+
+enum Status {
+  READ
+  UNREAD
+}
