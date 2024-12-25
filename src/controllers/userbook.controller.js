@@ -3,12 +3,13 @@ const prisma = new PrismaClient();
 
 exports.get = async (req, res) => {
   try {
-    const categories = await prisma.category.findMany({
+    const userBooks = await prisma.userBook.findMany({
       include: {
-        books: true, // Include related books
+        user: true, // Include user details
+        book: true, // Include book details
       },
     });
-    res.json(categories);
+    res.json(userBooks);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -17,18 +18,19 @@ exports.get = async (req, res) => {
 exports.getById = async (req, res) => {
   const { id } = req.params;
   try {
-    const category = await prisma.category.findUnique({
+    const userBook = await prisma.userBook.findUnique({
       where: {
         id: parseInt(id),
       },
       include: {
-        books: true, // Include related books
+        user: true, // Include user details
+        book: true, // Include book details
       },
     });
-    if (category) {
-      res.json(category);
+    if (userBook) {
+      res.json(userBook);
     } else {
-      res.status(404).json({ error: "Category not found" });
+      res.status(404).json({ error: "UserBook not found" });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -36,14 +38,16 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { name } = req.body;
+  const { user_id, book_id, status } = req.body;
   try {
-    const category = await prisma.category.create({
+    const userBook = await prisma.userBook.create({
       data: {
-        name,
+        user_id: parseInt(user_id),
+        book_id: parseInt(book_id),
+        status,
       },
     });
-    res.status(201).json(category);
+    res.status(201).json(userBook);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -51,17 +55,17 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
+  const { status } = req.body;
   try {
-    const category = await prisma.category.update({
+    const userBook = await prisma.userBook.update({
       where: {
         id: parseInt(id),
       },
       data: {
-        name,
+        status,
       },
     });
-    res.json(category);
+    res.json(userBook);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -70,12 +74,12 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
-    const category = await prisma.category.delete({
+    const userBook = await prisma.userBook.delete({
       where: {
         id: parseInt(id),
       },
     });
-    res.json(category);
+    res.json(userBook);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

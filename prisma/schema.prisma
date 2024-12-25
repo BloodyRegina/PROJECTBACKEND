@@ -4,14 +4,15 @@ generator client {
 
 datasource db {
   provider = "mysql" // หรือ "postgresql" ขึ้นอยู่กับฐานข้อมูลที่คุณใช้
-  url      = env("DATABASE_URL") // เพิ่ม URL ฐานข้อมูลในไฟล์ .env
+  url      = env("DATABASE_URL")
 }
 
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
-  password  String
   email     String   @unique
+  password  String
+  picture   String?  // ฟิลด์เก็บรูปภาพของผู้ใช้ (nullable)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -22,6 +23,7 @@ model Book {
   id          Int       @id @default(autoincrement())
   title       String
   author      String?
+  picture     String?   // ฟิลด์เก็บรูปภาพของหนังสือ (nullable)
   categoryId  Int?
   category    Category? @relation(fields: [categoryId], references: [id])
   

@@ -7,8 +7,8 @@ const port = process.env.PORT || 3000
 
 const bodyParser = require('body-parser')
 const cors = require('cors')
-const productRoute = require('./routes/product.route')
-const customersRoute = require('./routes/customer.route');
+const booksRoute = require('./routes/book.route')
+const userbooksRoute = require('./routes/userbook.route');
 const categoriesRoute = require('./routes/category.route');
 const registersRoute = require('./routes/register.route')
 app.use('/images', express.static('images'));
@@ -25,8 +25,8 @@ app.get("/", (req, res) =>{
     res.send("Sawatdee")
 })
 
-app.use("/products", productRoute)
-app.use("/customers",customersRoute);
+app.use("/books", booksRoute)
+app.use("/userbooks",userbooksRoute);
 app.use("/categories", categoriesRoute);
 app.use("/registers", registersRoute)
 app.listen(port, () => {
