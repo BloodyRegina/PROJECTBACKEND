@@ -8,46 +8,60 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  picture   String?  // ฟิลด์เก็บรูปภาพของผู้ใช้ (nullable)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userBooks UserBook[]
+  user_id    Int       @id @default(autoincrement())
+  username   String
+  email      String    @unique
+  password   String
+  picture    String?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  readingLists ReadingList[]
 }
 
 model Book {
-  id          Int       @id @default(autoincrement())
-  title       String
-  author      String?
-  picture     String?   // ฟิลด์เก็บรูปภาพของหนังสือ (nullable)
-  categoryId  Int?
-  category    Category? @relation(fields: [categoryId], references: [id])
-  
-  userBooks   UserBook[]
+  book_id      Int       @id @default(autoincrement())
+  description  String?
+  book_photo   String?
+  summary      String?
+  categories   BookCategory[]
+  readingLists ReadingList[]
+}
+
+enum ReadingStatus {
+  TO_READ
+  READING
+  COMPLETED
+}
+
+model ReadingList {
+  id          Int           @id @default(autoincrement()) // เพิ่ม id เป็น Primary Key
+  user_id     Int
+  book_id     Int
+  status      ReadingStatus @default(TO_READ)
+  add_date    DateTime      @default(now())
+  review      String?
+  finish_date DateTime?
+  start_date  DateTime?
+
+  user        User          @relation(fields: [user_id], references: [user_id])
+  book        Book          @relation(fields: [book_id], references: [book_id])
+
+  @@unique([user_id, book_id]) // เปลี่ยนจาก @@id เป็น Unique Constraint
+}
+
+
+model BookCategory {
+  book_id     Int
+  category_id Int
+
+  book        Book      @relation(fields: [book_id], references: [book_id])
+  category    Category  @relation(fields: [category_id], references: [category_id])
+
+  @@id([book_id, category_id])
 }
 
 model Category {
-  id    Int     @id @default(autoincrement())
-  name  String
-
-  books Book[]
-}
-
-model UserBook {
-  id        Int    @id @default(autoincrement())
-  userId    Int
-  bookId    Int
-  status    Status @default(UNREAD)
-  
-  user      User   @relation(fields: [userId], references: [id])
-  book      Book   @relation(fields: [bookId], references: [id])
-}
-
-enum Status {
-  READ
-  UNREAD
+  category_id Int       @id @default(autoincrement())
+  name        String
+  books       BookCategory[]
 }

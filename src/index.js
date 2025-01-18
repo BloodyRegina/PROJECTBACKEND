@@ -8,9 +8,11 @@ const port = process.env.PORT || 3000
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const booksRoute = require('./routes/book.route')
-const userbooksRoute = require('./routes/userbook.route');
 const categoriesRoute = require('./routes/category.route');
 const registersRoute = require('./routes/register.route')
+const readingListRoute = require('./routes/readingList.route')
+const bookCategoryRoute = require('./routes/bookCategory.route')
+
 app.use('/images', express.static('images'));
 app.use('/userpictures', express.static('userpictures'));
 // CORS cross origin resource sharing
@@ -26,9 +28,10 @@ app.get("/", (req, res) =>{
 })
 
 app.use("/books", booksRoute)
-app.use("/userbooks",userbooksRoute);
 app.use("/categories", categoriesRoute);
 app.use("/registers", registersRoute)
+app.use("/readings", readingListRoute)
+app.use("/bookcategories", bookCategoryRoute)
 app.listen(port, () => {
     console.log("App started at port: " + port)
 })

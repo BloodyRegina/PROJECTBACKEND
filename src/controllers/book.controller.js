@@ -1,16 +1,17 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const multer = require('multer');
+const multer = require("multer");
+const path = require("path");
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'images/'); // Store files in the 'images' directory
+    cb(null, "images/"); // Store files in the 'images' directory
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.originalname.split('.').pop());
-  }
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  },
 });
 
 const upload = multer({ storage: storage });
@@ -19,13 +20,18 @@ exports.get = async (req, res) => {
   try {
     const books = await prisma.book.findMany({
       include: {
-        category: true, // Include category relationship
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
-    // Add image URL to each book
-    const booksWithUrls = books.map(book => ({
+    const booksWithUrls = books.map((book) => ({
       ...book,
-      pictureUrl: book.picture ? `${req.protocol}://${req.get('host')}/images/${book.picture}` : null,
+      book_photo_url: book.book_photo
+        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+        : null,
     }));
     res.json(booksWithUrls);
   } catch (error) {
@@ -37,15 +43,19 @@ exports.getById = async (req, res) => {
   const { id } = req.params;
   try {
     const book = await prisma.book.findUnique({
-      where: {
-        id: parseInt(id),
-      },
+      where: { book_id: parseInt(id) },
       include: {
-        category: true, // Include category relationship
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
-    if (book) {
-      book.pictureUrl = book.picture ? `${req.protocol}://${req.get('host')}/images/${book.picture}` : null;
+    if (book) { 
+      book.book_photo_url = book.book_photo
+        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+        : null;
     }
     res.json(book);
   } catch (error) {
@@ -54,22 +64,24 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  // Use upload.single middleware to handle file upload
-  upload.single('picture')(req, res, async (err) => {
+  upload.single("book_photo")(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
     }
 
-    const { title, author, categoryId } = req.body;
-    const picture = req.file ? req.file.filename : null; // Get filename if uploaded
+    const { description, summary} = req.body;
+    const category_ids = req.body.categories.split(','); // แปลง String "5,6" เป็น Array
+    const book_photo = req.file ? req.file.filename : null;
 
     try {
       const book = await prisma.book.create({
         data: {
-          title,
-          author,
-          categoryId: categoryId ? parseInt(categoryId) : null,
-          picture, // Store filename in the database
+          description,
+          summary,
+          book_photo,
+          categories: {
+            create: category_ids.map((id) => ({ category_id: parseInt(id) })),
+          },
         },
       });
       res.json(book);
@@ -80,25 +92,26 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  upload.single('picture')(req, res, async (err) => {
+  upload.single("book_photo")(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
     }
 
     const { id } = req.params;
-    const { title, author, categoryId } = req.body;
-    const picture = req.file ? req.file.filename : null;
+    const { description, summary, category_ids } = req.body;
+    const book_photo = req.file ? req.file.filename : null;
 
     try {
       const book = await prisma.book.update({
-        where: {
-          id: parseInt(id),
-        },
+        where: { book_id: parseInt(id) },
         data: {
-          title,
-          author,
-          categoryId: categoryId ? parseInt(categoryId) : null,
-          picture, // Update filename if a new file is uploaded
+          description,
+          summary,
+          book_photo,
+          categories: {
+            deleteMany: {}, // Clear existing categories
+            create: category_ids.map((id) => ({ category_id: parseInt(id) })),
+          },
         },
       });
       res.json(book);
@@ -112,9 +125,7 @@ exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
     const book = await prisma.book.delete({
-      where: {
-        id: parseInt(id),
-      },
+      where: { book_id: parseInt(id) },
     });
     res.json(book);
   } catch (error) {
