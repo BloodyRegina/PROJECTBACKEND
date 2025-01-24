@@ -121,6 +121,53 @@ exports.update = async (req, res) => {
   });
 };
 
+exports.searchBooks = async (req, res) => {
+  const { title, author, publish_year } = req.params;
+
+  try {
+    // สร้างเงื่อนไขแบบ Dynamic
+    const filters = [];
+
+    if (title && title !== "default") {
+      filters.push({
+        title: {
+          startsWith: title,
+        },
+      });
+    }
+
+    if (author && author !== "default") {
+      filters.push({
+        author: {
+          startsWith: author,
+        },
+      });
+    }
+
+    if (publish_year && publish_year !== "default") {
+      filters.push({
+        publish_year: parseInt(publish_year),
+      });
+    }
+
+    // ส่ง query โดยใช้เงื่อนไขที่กรองแล้ว
+    const books = await prisma.book.findMany({
+      where: {
+        AND: filters,
+      },
+      orderBy: {
+        title: "asc",
+      },
+    });
+
+    res.json(books);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
 exports.delete = async (req, res) => {
   const { id } = req.params;
   try {

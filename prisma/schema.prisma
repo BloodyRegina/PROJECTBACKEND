@@ -19,13 +19,17 @@ model User {
 }
 
 model Book {
-  book_id      Int       @id @default(autoincrement())
+  book_id      Int            @id @default(autoincrement())
+  title        String         // ชื่อหนังสือ
+  author       String?        // ผู้แต่ง (ไม่บังคับ)
+  publish_year Int?           // ปีที่เผยแพร่
   description  String?
   book_photo   String?
   summary      String?
   categories   BookCategory[]
   readingLists ReadingList[]
 }
+
 
 enum ReadingStatus {
   TO_READ
