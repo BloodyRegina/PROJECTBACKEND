@@ -14,7 +14,7 @@ exports.getById = async (req, res) => {
   const { id } = req.params;
   try {
     const category = await prisma.category.findUnique({
-      where: { category_id: parseInt(id) },
+      where: { category_id: id },
     });
     if (!category) {
       return res.status(404).json({ error: "Category not found" });
@@ -40,7 +40,7 @@ exports.update = async (req, res) => {
   const { name } = req.body;
   try {
     const category = await prisma.category.update({
-      where: { category_id: parseInt(id) },
+      where: { category_id: id },
       data: { name },
     });
     res.json(category);
@@ -53,7 +53,7 @@ exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
     const category = await prisma.category.delete({
-      where: { category_id: parseInt(id) },
+      where: { category_id: id },
     });
     res.json(category);
   } catch (error) {

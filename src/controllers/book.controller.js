@@ -27,12 +27,19 @@ exports.get = async (req, res) => {
         },
       },
     });
+
     const booksWithUrls = books.map((book) => ({
-      ...book,
-      book_photo_url: book.book_photo
+      _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+      title: book.title,
+      author: book.author,
+      publish_year: book.publish_year,
+      description: book.description,
+      book_photo: book.book_photo
         ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
         : null,
+      summary: book.summary,
     }));
+
     res.json(booksWithUrls);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -43,7 +50,7 @@ exports.getById = async (req, res) => {
   const { id } = req.params;
   try {
     const book = await prisma.book.findUnique({
-      where: { book_id: parseInt(id) },
+      where: { book_id: id },
       include: {
         categories: {
           include: {
@@ -52,12 +59,23 @@ exports.getById = async (req, res) => {
         },
       },
     });
-    if (book) { 
-      book.book_photo_url = book.book_photo
-        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
-        : null;
+
+    if (book) {
+      const bookWithUrl = {
+        _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+        title: book.title,
+        author: book.author,
+        publish_year: book.publish_year,
+        description: book.description,
+        book_photo: book.book_photo
+          ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+          : null,
+        summary: book.summary,
+      };
+      res.json(bookWithUrl);
+    } else {
+      res.status(404).json({ error: "Book not found" });
     }
-    res.json(book);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -69,8 +87,8 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
-    const { description, summary} = req.body;
-    const category_ids = req.body.categories.split(','); // แปลง String "5,6" เป็น Array
+    const { description, summary } = req.body;
+    const category_ids = req.body.categories.split(","); // แปลง String "5,6" เป็น Array
     const book_photo = req.file ? req.file.filename : null;
 
     try {
@@ -80,11 +98,24 @@ exports.create = async (req, res) => {
           summary,
           book_photo,
           categories: {
-            create: category_ids.map((id) => ({ category_id: parseInt(id) })),
+            create: category_ids.map((id) => ({ category_id: id })),
           },
         },
       });
-      res.json(book);
+
+      const bookResponse = {
+        _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+        title: book.title,
+        author: book.author,
+        publish_year: book.publish_year,
+        description: book.description,
+        book_photo: book.book_photo
+          ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+          : null,
+        summary: book.summary,
+      };
+
+      res.json(bookResponse);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -103,18 +134,31 @@ exports.update = async (req, res) => {
 
     try {
       const book = await prisma.book.update({
-        where: { book_id: parseInt(id) },
+        where: { book_id: id },
         data: {
           description,
           summary,
           book_photo,
           categories: {
             deleteMany: {}, // Clear existing categories
-            create: category_ids.map((id) => ({ category_id: parseInt(id) })),
+            create: category_ids.map((id) => ({ category_id: id })),
           },
         },
       });
-      res.json(book);
+
+      const bookResponse = {
+        _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+        title: book.title,
+        author: book.author,
+        publish_year: book.publish_year,
+        description: book.description,
+        book_photo: book.book_photo
+          ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+          : null,
+        summary: book.summary,
+      };
+
+      res.json(bookResponse);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -160,7 +204,19 @@ exports.searchBooks = async (req, res) => {
       },
     });
 
-    res.json(books);
+    const booksWithUrls = books.map((book) => ({
+      _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+      title: book.title,
+      author: book.author,
+      publish_year: book.publish_year,
+      description: book.description,
+      book_photo: book.book_photo
+        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+        : null,
+      summary: book.summary,
+    }));
+
+    res.json(booksWithUrls);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -172,9 +228,22 @@ exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
     const book = await prisma.book.delete({
-      where: { book_id: parseInt(id) },
+      where: { book_id: id },
     });
-    res.json(book);
+
+    const bookResponse = {
+      _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+      title: book.title,
+      author: book.author,
+      publish_year: book.publish_year,
+      description: book.description,
+      book_photo: book.book_photo
+        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+        : null,
+      summary: book.summary,
+    };
+
+    res.json(bookResponse);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

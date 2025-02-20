@@ -14,11 +14,14 @@ exports.getAll = async (req, res) => {
 
 exports.add = async (req, res) => {
   const { book_id, category_id } = req.body;
+  if (!book_id || !category_id) {
+    return res.status(400).json({ error: "book_id and category_id are required" });
+  }
   try {
     const newBookCategory = await prisma.bookCategory.create({
       data: {
-        book_id: parseInt(book_id),
-        category_id: parseInt(category_id),
+        book_id: book_id.toString(), // แปลงเป็น String
+        category_id: category_id.toString(), // แปลงเป็น String
       },
     });
     res.json(newBookCategory);
@@ -28,10 +31,13 @@ exports.add = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-  const { book_id, category_id } = req.params;
+  const { id } = req.params; // ใช้ id ของ BookCategory แทน
+  if (!id) {
+    return res.status(400).json({ error: "id is required" });
+  }
   try {
     const deletedBookCategory = await prisma.bookCategory.delete({
-      where: { book_id_category_id: { book_id: parseInt(book_id), category_id: parseInt(category_id) } },
+      where: { id: id.toString() }, // แปลงเป็น String
     });
     res.json(deletedBookCategory);
   } catch (error) {

@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql" // หรือ "postgresql" ขึ้นอยู่กับฐานข้อมูลที่คุณใช้
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  user_id    Int       @id @default(autoincrement())
+  user_id    String    @id @default(auto()) @map("_id") @db.ObjectId
   username   String
   email      String    @unique
   password   String
@@ -19,17 +19,16 @@ model User {
 }
 
 model Book {
-  book_id      Int            @id @default(autoincrement())
-  title        String         // ชื่อหนังสือ
-  author       String?        // ผู้แต่ง (ไม่บังคับ)
-  publish_year Int?           // ปีที่เผยแพร่
+  book_id      String    @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  author       String?
+  publish_year Int?
   description  String?
   book_photo   String?
   summary      String?
   categories   BookCategory[]
   readingLists ReadingList[]
 }
-
 
 enum ReadingStatus {
   TO_READ
@@ -38,34 +37,34 @@ enum ReadingStatus {
 }
 
 model ReadingList {
-  id          Int           @id @default(autoincrement()) // เพิ่ม id เป็น Primary Key
-  user_id     Int
-  book_id     Int
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id     String    @db.ObjectId
+  book_id     String    @db.ObjectId
   status      ReadingStatus @default(TO_READ)
-  add_date    DateTime      @default(now())
+  add_date    DateTime  @default(now())
   review      String?
   finish_date DateTime?
   start_date  DateTime?
 
-  user        User          @relation(fields: [user_id], references: [user_id])
-  book        Book          @relation(fields: [book_id], references: [book_id])
+  user        User      @relation(fields: [user_id], references: [user_id])
+  book        Book      @relation(fields: [book_id], references: [book_id])
 
-  @@unique([user_id, book_id]) // เปลี่ยนจาก @@id เป็น Unique Constraint
+  @@unique([user_id, book_id])
 }
 
-
 model BookCategory {
-  book_id     Int
-  category_id Int
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  book_id     String    @db.ObjectId
+  category_id String    @db.ObjectId
 
   book        Book      @relation(fields: [book_id], references: [book_id])
   category    Category  @relation(fields: [category_id], references: [category_id])
 
-  @@id([book_id, category_id])
+  @@unique([book_id, category_id]) // ใช้ unique constraint แทน compound id
 }
 
 model Category {
-  category_id Int       @id @default(autoincrement())
+  category_id String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   books       BookCategory[]
 }
