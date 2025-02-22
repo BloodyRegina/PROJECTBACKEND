@@ -87,13 +87,16 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
-    const { description, summary } = req.body;
+    const { title, author, publish_year, description, summary } = req.body; // เพิ่ม title, author และ publish_year
     const category_ids = req.body.categories.split(","); // แปลง String "5,6" เป็น Array
     const book_photo = req.file ? req.file.filename : null;
 
     try {
       const book = await prisma.book.create({
         data: {
+          title, // เพิ่ม title
+          author, // เพิ่ม author
+          publish_year: parseInt(publish_year), // เพิ่ม publish_year และแปลงเป็น int
           description,
           summary,
           book_photo,
@@ -121,6 +124,7 @@ exports.create = async (req, res) => {
     }
   });
 };
+
 
 exports.update = async (req, res) => {
   upload.single("book_photo")(req, res, async (err) => {
