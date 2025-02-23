@@ -16,6 +16,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// Get all books with reviews and categories
 exports.get = async (req, res) => {
   try {
     const books = await prisma.book.findMany({
@@ -25,11 +26,16 @@ exports.get = async (req, res) => {
             category: true,
           },
         },
+        reviews: {
+          include: {
+            user: true, // Include user details in reviews
+          },
+        },
       },
     });
 
     const booksWithUrls = books.map((book) => ({
-      _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+      _id: book.book_id.toString(),
       title: book.title,
       author: book.author,
       publish_year: book.publish_year,
@@ -38,6 +44,18 @@ exports.get = async (req, res) => {
         ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
         : null,
       summary: book.summary,
+      categories: book.categories.map((cat) => cat.category),
+      reviews: book.reviews.map((review) => ({
+        review_id: review.review_id.toString(),
+        user: {
+          user_id: review.user.user_id.toString(),
+          username: review.user.username,
+          email: review.user.email,
+        },
+        rating: review.rating,
+        comment: review.comment,
+        review_date: review.review_date,
+      })),
     }));
 
     res.json(booksWithUrls);
@@ -46,6 +64,7 @@ exports.get = async (req, res) => {
   }
 };
 
+// Get a single book by ID with reviews and categories
 exports.getById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -57,12 +76,17 @@ exports.getById = async (req, res) => {
             category: true,
           },
         },
+        reviews: {
+          include: {
+            user: true, // Include user details in reviews
+          },
+        },
       },
     });
 
     if (book) {
       const bookWithUrl = {
-        _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+        _id: book.book_id.toString(),
         title: book.title,
         author: book.author,
         publish_year: book.publish_year,
@@ -71,6 +95,18 @@ exports.getById = async (req, res) => {
           ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
           : null,
         summary: book.summary,
+        categories: book.categories.map((cat) => cat.category),
+        reviews: book.reviews.map((review) => ({
+          review_id: review.review_id.toString(),
+          user: {
+            user_id: review.user.user_id.toString(),
+            username: review.user.username,
+            email: review.user.email,
+          },
+          rating: review.rating,
+          comment: review.comment,
+          review_date: review.review_date,
+        })),
       };
       res.json(bookWithUrl);
     } else {
@@ -81,22 +117,23 @@ exports.getById = async (req, res) => {
   }
 };
 
+// Create a new book with categories
 exports.create = async (req, res) => {
   upload.single("book_photo")(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
     }
 
-    const { title, author, publish_year, description, summary } = req.body; // เพิ่ม title, author และ publish_year
-    const category_ids = req.body.categories.split(","); // แปลง String "5,6" เป็น Array
+    const { title, author, publish_year, description, summary } = req.body;
+    const category_ids = req.body.categories.split(",");
     const book_photo = req.file ? req.file.filename : null;
 
     try {
       const book = await prisma.book.create({
         data: {
-          title, // เพิ่ม title
-          author, // เพิ่ม author
-          publish_year: parseInt(publish_year), // เพิ่ม publish_year และแปลงเป็น int
+          title,
+          author,
+          publish_year: parseInt(publish_year),
           description,
           summary,
           book_photo,
@@ -107,7 +144,7 @@ exports.create = async (req, res) => {
       });
 
       const bookResponse = {
-        _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+        _id: book.book_id.toString(),
         title: book.title,
         author: book.author,
         publish_year: book.publish_year,
@@ -125,7 +162,7 @@ exports.create = async (req, res) => {
   });
 };
 
-
+// Update a book with categories
 exports.update = async (req, res) => {
   upload.single("book_photo")(req, res, async (err) => {
     if (err) {
@@ -151,7 +188,7 @@ exports.update = async (req, res) => {
       });
 
       const bookResponse = {
-        _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+        _id: book.book_id.toString(),
         title: book.title,
         author: book.author,
         publish_year: book.publish_year,
@@ -169,74 +206,22 @@ exports.update = async (req, res) => {
   });
 };
 
-exports.searchBooks = async (req, res) => {
-  const { title, author, publish_year } = req.params;
-
-  try {
-    // สร้างเงื่อนไขแบบ Dynamic
-    const filters = [];
-
-    if (title && title !== "default") {
-      filters.push({
-        title: {
-          startsWith: title,
-        },
-      });
-    }
-
-    if (author && author !== "default") {
-      filters.push({
-        author: {
-          startsWith: author,
-        },
-      });
-    }
-
-    if (publish_year && publish_year !== "default") {
-      filters.push({
-        publish_year: parseInt(publish_year),
-      });
-    }
-
-    // ส่ง query โดยใช้เงื่อนไขที่กรองแล้ว
-    const books = await prisma.book.findMany({
-      where: {
-        AND: filters,
-      },
-      orderBy: {
-        title: "asc",
-      },
-    });
-
-    const booksWithUrls = books.map((book) => ({
-      _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
-      title: book.title,
-      author: book.author,
-      publish_year: book.publish_year,
-      description: book.description,
-      book_photo: book.book_photo
-        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
-        : null,
-      summary: book.summary,
-    }));
-
-    res.json(booksWithUrls);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-
-
+// Delete a book and its associated reviews
 exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
+    // Delete associated reviews first
+    await prisma.review.deleteMany({
+      where: { book_id: id },
+    });
+
+    // Then delete the book
     const book = await prisma.book.delete({
       where: { book_id: id },
     });
 
     const bookResponse = {
-      _id: book.book_id.toString(), // เปลี่ยน book_id เป็น _id
+      _id: book.book_id.toString(),
       title: book.title,
       author: book.author,
       publish_year: book.publish_year,
