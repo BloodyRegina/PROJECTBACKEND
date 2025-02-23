@@ -1,76 +1,10 @@
 use("Book");
 
-db.Book.insertMany([
-  {
-    _id: ObjectId(), // ใช้ ObjectId() แทน book_id 1
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    publish_year: 1925,
-    description:
-      "A story of the fabulously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan.",
-    book_photo: "https://example.com/great_gatsby.jpg",
-    summary: "A classic novel of the Jazz Age.",
-  },
-  {
-    _id: ObjectId(), // ใช้ ObjectId() แทน book_id 2
-    title: "1984",
-    author: "George Orwell",
-    publish_year: 1949,
-    description:
-      "A dystopian novel set in Airstrip One, formerly Great Britain.",
-    book_photo: "https://example.com/1984.jpg",
-    summary: "A chilling prophecy about the future.",
-  },
-]);
-
 db.Category.insertMany([
   {
     _id: ObjectId(), // ใช้ ObjectId() แทน category_id 1
-    name: "Fiction",
+    name: "Mystery",
   },
-  {
-    _id: ObjectId(), // ใช้ ObjectId() แทน category_id 2
-    name: "Dystopian",
-  },
+
 ]);
 
-const books = db.Book.find().toArray();
-const categories = db.Category.find().toArray();
-
-db.BookCategory.insertMany([
-  {
-    _id: ObjectId(), // ให้แน่ใจว่าใช้ ObjectId()
-    book_id: books[0]._id, // ใช้ ObjectId() ของหนังสือแทนเลข
-    category_id: categories[0]._id, // ใช้ ObjectId() ของหมวดหมู่
-  },
-  {
-    _id: ObjectId(),
-    book_id: books[1]._id,
-    category_id: categories[1]._id,
-  },
-]);
-
-const users = db.User.find().toArray();
-
-db.ReadingList.insertMany([
-  {
-    _id: ObjectId(),
-    user_id: users[0]._id, // ใช้ ObjectId() ของผู้ใช้แทนเลข
-    book_id: books[0]._id,
-    status: "TO_READ",
-    add_date: new Date(),
-    review: "Looking forward to reading this classic!",
-    start_date: null,
-    finish_date: null,
-  },
-  {
-    _id: ObjectId(),
-    user_id: users[1]._id,
-    book_id: books[1]._id,
-    status: "READING",
-    add_date: new Date(),
-    review: "A must-read for everyone.",
-    start_date: new Date(),
-    finish_date: null,
-  },
-]);
