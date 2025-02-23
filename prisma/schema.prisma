@@ -47,8 +47,6 @@ model ReadingList {
   book_id     String        @db.ObjectId
   status      ReadingStatus @default(TO_READ)
   add_date    DateTime      @default(now())
-  review      String?
-  rating      Int?
   finish_date DateTime?
   start_date  DateTime?
 

@@ -285,3 +285,128 @@ exports.delete = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getTopBooks = async (req, res) => {
+  const { limit } = req.query; // รับจำนวนหนังสือที่ต้องการแสดงจาก query parameter
+
+  try {
+    const topBooks = await prisma.book.findMany({
+      orderBy: [
+        { added_to_list_count: "desc" },
+        { average_rating: "desc" },
+        { review_count: "desc" }
+      ],
+      take: parseInt(limit) || 10, // จำกัดจำนวนหนังสือที่ต้องการแสดง (ค่าเริ่มต้นคือ 10)
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
+        reviews: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    const booksWithUrls = topBooks.map((book) => ({
+      _id: book.book_id.toString(),
+      title: book.title,
+      author: book.author,
+      publish_year: book.publish_year,
+      description: book.description,
+      book_photo: book.book_photo
+        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+        : null,
+      summary: book.summary,
+      categories: book.categories.map((cat) => cat.category),
+      reviews: book.reviews.map((review) => ({
+        review_id: review.review_id.toString(),
+        user: {
+          user_id: review.user.user_id.toString(),
+          username: review.user.username,
+          email: review.user.email,
+        },
+        rating: review.rating,
+        comment: review.comment,
+        review_date: review.review_date,
+      })),
+    }));
+
+    res.json(booksWithUrls);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.addReview = async (req, res) => {
+  const { book_id, user_id, rating, comment } = req.body;
+
+  try {
+    const review = await prisma.review.create({
+      data: {
+        book: {
+          connect: {
+            book_id: book_id,
+          },
+        },
+        user: {
+          connect: {
+            user_id: user_id,
+          },
+        },
+        rating: rating,
+        comment: comment,
+      },
+    });
+
+    // อัพเดทค่า review_count และ average_rating ของหนังสือ
+    const book = await prisma.book.update({
+      where: { book_id },
+      data: {
+        review_count: {
+          increment: 1,
+        },
+        average_rating: await calculateAverageRating(book_id),
+      },
+    });
+
+    res.json({ review, book });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ฟังก์ชันเพื่อคำนวณค่าเฉลี่ยของคะแนน
+async function calculateAverageRating(book_id) {
+  const reviews = await prisma.review.findMany({
+    where: { book_id },
+    select: { rating: true },
+  });
+
+  const totalRating = reviews.reduce((acc, review) => acc + review.rating, 0);
+  const averageRating = totalRating / reviews.length;
+
+  return averageRating;
+}
+
+exports.incrementAddedToListCount = async (req, res) => {
+  const { id } = req.params; // รับ book_id จาก URL parameters
+
+  try {
+    const book = await prisma.book.update({
+      where: { book_id: id },
+      data: {
+        added_to_list_count: {
+          increment: 1, // เพิ่มค่า added_to_list_count ขึ้น 1
+        },
+      },
+    });
+
+    res.json(book);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
