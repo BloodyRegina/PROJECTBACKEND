@@ -4,7 +4,10 @@ const prisma = new PrismaClient();
 exports.getAll = async (req, res) => {
   try {
     const bookCategories = await prisma.bookCategory.findMany({
-      include: { book: true, category: true },
+      include: {
+        book: true,
+        category: true,
+      },
     });
     res.json(bookCategories);
   } catch (error) {
@@ -20,8 +23,8 @@ exports.add = async (req, res) => {
   try {
     const newBookCategory = await prisma.bookCategory.create({
       data: {
-        book_id: book_id.toString(), // แปลงเป็น String
-        category_id: category_id.toString(), // แปลงเป็น String
+        book_id: book_id.toString(),
+        category_id: category_id.toString(),
       },
     });
     res.json(newBookCategory);
@@ -31,13 +34,13 @@ exports.add = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-  const { id } = req.params; // ใช้ id ของ BookCategory แทน
+  const { id } = req.params;
   if (!id) {
     return res.status(400).json({ error: "id is required" });
   }
   try {
     const deletedBookCategory = await prisma.bookCategory.delete({
-      where: { id: id.toString() }, // แปลงเป็น String
+      where: { id: id.toString() },
     });
     res.json(deletedBookCategory);
   } catch (error) {
