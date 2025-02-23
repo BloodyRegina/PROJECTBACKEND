@@ -16,7 +16,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Get all books with reviews and categories
 exports.get = async (req, res) => {
   try {
     const books = await prisma.book.findMany({
@@ -64,7 +63,6 @@ exports.get = async (req, res) => {
   }
 };
 
-// Get a single book by ID with reviews and categories
 exports.getById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -117,7 +115,6 @@ exports.getById = async (req, res) => {
   }
 };
 
-// Create a new book with categories
 exports.create = async (req, res) => {
   upload.single("book_photo")(req, res, async (err) => {
     if (err) {
@@ -162,7 +159,6 @@ exports.create = async (req, res) => {
   });
 };
 
-// Update a book with categories
 exports.update = async (req, res) => {
   upload.single("book_photo")(req, res, async (err) => {
     if (err) {
@@ -181,7 +177,7 @@ exports.update = async (req, res) => {
           summary,
           book_photo,
           categories: {
-            deleteMany: {}, // Clear existing categories
+            deleteMany: {},
             create: category_ids.map((id) => ({ category_id: id })),
           },
         },
@@ -206,16 +202,68 @@ exports.update = async (req, res) => {
   });
 };
 
-// Delete a book and its associated reviews
+exports.searchBooks = async (req, res) => {
+  const { title, author, publish_year } = req.params;
+
+  try {
+    const filters = [];
+
+    if (title && title !== "default") {
+      filters.push({
+        title: {
+          startsWith: title,
+        },
+      });
+    }
+
+    if (author && author !== "default") {
+      filters.push({
+        author: {
+          startsWith: author,
+        },
+      });
+    }
+
+    if (publish_year && publish_year !== "default") {
+      filters.push({
+        publish_year: parseInt(publish_year),
+      });
+    }
+
+    const books = await prisma.book.findMany({
+      where: {
+        AND: filters,
+      },
+      orderBy: {
+        title: "asc",
+      },
+    });
+
+    const booksWithUrls = books.map((book) => ({
+      _id: book.book_id.toString(),
+      title: book.title,
+      author: book.author,
+      publish_year: book.publish_year,
+      description: book.description,
+      book_photo: book.book_photo
+        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+        : null,
+      summary: book.summary,
+    }));
+
+    res.json(booksWithUrls);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
-    // Delete associated reviews first
     await prisma.review.deleteMany({
       where: { book_id: id },
     });
 
-    // Then delete the book
     const book = await prisma.book.delete({
       where: { book_id: id },
     });
