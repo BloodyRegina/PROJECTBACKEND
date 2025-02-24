@@ -42,22 +42,33 @@ exports.getByUserId = async (req, res) => {
 
 // Add a new reading list entry
 exports.add = async (req, res) => {
-  const { user_id, book_id, status, finish_date, start_date } = req.body;
   try {
+    console.log("📌 Received request body:", req.body); // ดูค่าที่ส่งมาว่าครบไหม
+
+    const { user_id, book_id, status, finish_date, start_date } = req.body;
+
+    if (!user_id || !book_id) {
+      return res.status(400).json({ error: "Missing user_id or book_id" });
+    }
+
     const newReadingList = await prisma.readingList.create({
       data: {
         user_id,
         book_id,
-        status,
+        status: status || "reading",
+        start_date: start_date ? new Date(start_date) : new Date(),
         finish_date: finish_date ? new Date(finish_date) : null,
-        start_date: start_date ? new Date(start_date) : null,
       },
     });
+
     res.json(newReadingList);
   } catch (error) {
+    console.error("❌ Error in adding to reading list:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 // Update a reading list entry
 exports.update = async (req, res) => {
