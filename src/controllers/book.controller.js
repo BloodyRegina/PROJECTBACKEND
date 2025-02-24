@@ -3,10 +3,13 @@ const prisma = new PrismaClient();
 const multer = require("multer");
 const path = require("path");
 
+
 // Configure multer for image uploads
-const imageStorage = multer.diskStorage({
+const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "images/"); // Store image files in the 'images' directory
+    const folder = file.fieldname === "book_photo" ? "images/" : "html_books/";
+    
+    cb(null, folder);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -14,20 +17,11 @@ const imageStorage = multer.diskStorage({
   },
 });
 
-const imageUpload = multer({ storage: imageStorage });
-
-// Configure multer for HTML uploads
-const htmlStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "html_books/"); // Store HTML files in the 'html_books' directory
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-const htmlUpload = multer({ storage: htmlStorage });
+// ใช้ `diskStorage` แทน `buffer`
+const upload = multer({ storage: storage }).fields([
+  { name: "book_photo", maxCount: 1 },
+  { name: "html_content", maxCount: 1 },
+]);
 
 exports.get = async (req, res) => {
   try {
@@ -135,57 +129,51 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  imageUpload.single("book_photo")(req, res, async (imageErr) => {
-    if (imageErr) {
-      return res.status(400).json({ error: imageErr.message });
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
     }
 
-  htmlUpload.single("html_content")(req, res, async (htmlErr) => {
-      if (htmlErr) {
-        return res.status(400).json({ error: htmlErr.message });
-      }
+    const { title, author, publish_year, description, summary, categories } = req.body;
 
-      const { title, author, publish_year, description, summary } = req.body;
-      const category_ids = req.body.categories.split(",");
-      const book_photo = req.file && req.file.filename ? req.file.filename : null; // ใช้ req.file
-      const html_content = req.file && req.file.filename ? req.file.filename : null; // ใช้ req.file
+    // ดึงค่าไฟล์ที่อัปโหลด
+    const book_photo = req.files["book_photo"] ? req.files["book_photo"][0].filename : null;
+    const html_content = req.files["html_content"] ? req.files["html_content"][0].filename : null;
 
-      try {
-        const book = await prisma.book.create({
-          data: {
-            title,
-            author,
-            publish_year: parseInt(publish_year),
-            description,
-            summary,
-            book_photo,
-            html_content,
-            categories: {
-              create: category_ids.map((id) => ({ category_id: id })),
-            },
+    // ตรวจสอบ categories (เผื่อกรณีไม่ได้ส่งมา)
+    const category_ids = categories ? categories.split(",") : [];
+
+    try {
+      const book = await prisma.book.create({
+        data: {
+          title,
+          author,
+          publish_year: parseInt(publish_year),
+          description,
+          summary,
+          book_photo,
+          html_content,
+          categories: {
+            create: category_ids.map((id) => ({ category_id: id })),
           },
-        });
+        },
+      });
 
-        const bookResponse = {
-          _id: book.book_id.toString(),
-          title: book.title,
-          author: book.author,
-          publish_year: book.publish_year,
-          description: book.description,
-          book_photo: book.book_photo
-            ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
-            : null,
-          summary: book.summary,
-          html_content: book.html_content
-            ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
-            : null,
-        };
-
-        res.json(bookResponse);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    });
+      const bookResponse = {
+        _id: book.book_id.toString(),
+        title: book.title,
+        author: book.author,
+        publish_year: book.publish_year,
+        description: book.description,
+        book_photo: book_photo ? `${req.protocol}://${req.get("host")}/images/${book_photo}` : null,
+        summary: book.summary,
+        html_content: html_content ? `${req.protocol}://${req.get("host")}/html_books/${html_content}` : null,
+      };
+      console.log("Uploaded files:", req.files);
+      res.json(bookResponse);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   });
 };
 
@@ -383,6 +371,63 @@ exports.getTopBooks = async (req, res) => {
   }
 };
 
+exports.getTopRatingBooks = async (req, res) => {
+  const { limit } = req.query;
+
+  try {
+    const topBooks = await prisma.book.findMany({
+      orderBy: [
+        { average_rating: "desc" },
+        { added_to_list_count: "desc" },
+        { review_count: "desc" },
+      ],
+      take: parseInt(limit) || 10,
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
+        reviews: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    const booksWithUrls = topBooks.map((book) => ({
+      _id: book.book_id.toString(),
+      title: book.title,
+      author: book.author,
+      publish_year: book.publish_year,
+      description: book.description,
+      book_photo: book.book_photo
+        ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+        : null,
+      summary: book.summary,
+      categories: book.categories.map((cat) => cat.category),
+      reviews: book.reviews.map((review) => ({
+        review_id: review.review_id.toString(),
+        user: {
+          user_id: review.user.user_id.toString(),
+          username: review.user.username,
+          email: review.user.email,
+        },
+        rating: review.rating,
+        comment: review.comment,
+        review_date: review.review_date,
+      })),
+      html_content: book.html_content
+        ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+        : null, // Include HTML file URL
+    }));
+
+    res.json(booksWithUrls);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 // exports.addReview and exports.incrementAddedToListCount remain unchanged
 
 exports.addReview = async (req, res) => {
