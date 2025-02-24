@@ -147,8 +147,8 @@ exports.create = async (req, res) => {
 
       const { title, author, publish_year, description, summary } = req.body;
       const category_ids = req.body.categories.split(",");
-      const book_photo = req.files.book_photo[0].filename;
-      const html_content = req.files.html_content[0].filename;
+      const book_photo = req.files && req.files.book_photo ? req.files.book_photo[0].filename : null;
+      const html_content = req.files && req.files.html_content ? req.files.html_content[0].filename : null;
 
       try {
         const book = await prisma.book.create({
