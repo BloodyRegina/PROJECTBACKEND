@@ -20,7 +20,7 @@ model User {
 }
 
 model Book {
-  book_id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  book_id             String         @id @default(auto()) @map("_id") @db.ObjectId
   title               String
   author              String?
   publish_year        Int?
@@ -29,10 +29,11 @@ model Book {
   summary             String?
   categories          BookCategory[]
   readingLists        ReadingList[]
-  reviews             Review[]       // เพิ่มความสัมพันธ์กลับไปยังโมเดล Review
-  added_to_list_count Int          @default(0) // จำนวนครั้งที่หนังสือถูกเพิ่มในรายการอ่าน
-  average_rating      Float?         // ค่าเฉลี่ยของคะแนน
-  review_count        Int          @default(0) // จำนวนรีวิวของหนังสือ
+  reviews             Review[]
+  added_to_list_count Int            @default(0)
+  average_rating      Float?
+  review_count        Int            @default(0)
+  html_content        String? // เพิ่มฟิลด์สำหรับเก็บเนื้อหา HTML
 }
 
 enum ReadingStatus {

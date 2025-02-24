@@ -78,6 +78,25 @@ exports.update = async (req, res) => {
   }
 };
 
+exports.startReading = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updatedReadingList = await prisma.readingList.update({
+      where: { id },
+      data: {
+        status: "READING",
+        start_date: new Date(),
+      },
+    });
+    res.json({
+      message: "Status updated to reading",
+      updatedReadingList,
+    });
+  } catch (error) {
+    res.status(404).json({ error: "Reading list entry not found or invalid id" });
+  }
+};
+
 // Mark a reading list entry as completed
 exports.finishReading = async (req, res) => {
   const { id } = req.params;
@@ -106,6 +125,55 @@ exports.delete = async (req, res) => {
       where: { user_id_book_id: { user_id, book_id } },
     });
     res.json(deletedReadingList);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Function to find fastest readers
+exports.findFastestReaders = async (req, res) => {
+  try {
+    const readingLists = await prisma.readingList.findMany({
+      where: {
+        finish_date: {
+          not: null,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    const userReadingTimes = {};
+    readingLists.forEach((list) => {
+      if (list.start_date && list.finish_date) {
+        const timeDiff = list.finish_date.getTime() - list.start_date.getTime();
+        const userId = list.user_id;
+
+        if (!userReadingTimes[userId]) {
+          userReadingTimes[userId] = {
+            totalTime: 0,
+            count: 0,
+            username: list.user.username,
+          };
+        }
+
+        userReadingTimes[userId].totalTime += timeDiff;
+        userReadingTimes[userId].count++;
+      }
+    });
+
+    const userAverageTimes = Object.entries(userReadingTimes).map(
+      ([userId, data]) => ({
+        userId,
+        averageTime: data.totalTime / data.count,
+        username: data.username,
+      })
+    );
+
+    userAverageTimes.sort((a, b) => a.averageTime - b.averageTime);
+
+    res.json(userAverageTimes);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

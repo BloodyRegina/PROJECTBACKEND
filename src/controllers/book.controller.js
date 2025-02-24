@@ -3,10 +3,10 @@ const prisma = new PrismaClient();
 const multer = require("multer");
 const path = require("path");
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
+// Configure multer for image uploads
+const imageStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "images/"); // Store files in the 'images' directory
+    cb(null, "images/"); // Store image files in the 'images' directory
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -14,7 +14,20 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const imageUpload = multer({ storage: imageStorage });
+
+// Configure multer for HTML uploads
+const htmlStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "html_books/"); // Store HTML files in the 'html_books' directory
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const htmlUpload = multer({ storage: htmlStorage });
 
 exports.get = async (req, res) => {
   try {
@@ -116,46 +129,55 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  upload.single("book_photo")(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ error: err.message });
+  imageUpload.single("book_photo")(req, res, async (imageErr) => {
+    if (imageErr) {
+      return res.status(400).json({ error: imageErr.message });
     }
 
-    const { title, author, publish_year, description, summary } = req.body;
-    const category_ids = req.body.categories.split(",");
-    const book_photo = req.file ? req.file.filename : null;
+    htmlUpload.single("html_content")(req, res, async (htmlErr) => {
+      if (htmlErr) {
+        return res.status(400).json({ error: htmlErr.message });
+      }
 
-    try {
-      const book = await prisma.book.create({
-        data: {
-          title,
-          author,
-          publish_year: parseInt(publish_year),
-          description,
-          summary,
-          book_photo,
-          categories: {
-            create: category_ids.map((id) => ({ category_id: id })),
+      const { title, author, publish_year, description, summary } = req.body;
+      const category_ids = req.body.categories.split(",");
+      const book_photo = req.files && req.files.book_photo ? req.files.book_photo[0].filename : null;
+      const html_content = req.files && req.files.html_content ? req.files.html_content[0].filename : null;
+
+      try {
+        const book = await prisma.book.create({
+          data: {
+            title,
+            author,
+            publish_year: parseInt(publish_year),
+            description,
+            summary,
+            book_photo,
+            html_content: html_content, // Store HTML file name in database
+            categories: {
+              create: category_ids.map((id) => ({ category_id: id })),
+            },
           },
-        },
-      });
+        });
 
-      const bookResponse = {
-        _id: book.book_id.toString(),
-        title: book.title,
-        author: book.author,
-        publish_year: book.publish_year,
-        description: book.description,
-        book_photo: book.book_photo
-          ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
-          : null,
-        summary: book.summary,
-      };
+        const bookResponse = {
+          _id: book.book_id.toString(),
+          title: book.title,
+          author: book.author,
+          publish_year: book.publish_year,
+          description: book.description,
+          book_photo: book.book_photo
+            ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+            : null,
+          summary: book.summary,
+          html_content: book.html_content, // Include HTML file name in response
+        };
 
-      res.json(bookResponse);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
+        res.json(bookResponse);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
   });
 };
 
