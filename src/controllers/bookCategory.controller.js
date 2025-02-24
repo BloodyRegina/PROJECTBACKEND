@@ -72,3 +72,33 @@ exports.getByCategoryId = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getCategoriesByBookId = async (req, res) => {
+  const { book_id } = req.params;
+  if (!book_id) {
+    return res.status(400).json({ error: "book_id is required" });
+  }
+
+  try {
+    const categories = await prisma.bookCategory.findMany({
+      where: {
+        book_id: book_id.toString(),
+      },
+      include: {
+        category: true, // ดึงข้อมูล category ทั้งหมดที่เชื่อมกับหนังสือ
+      },
+    });
+
+    if (categories.length === 0) {
+      return res.status(404).json({ message: "No categories found for this book" });
+    }
+
+    // ดึงชื่อหมวดหมู่
+    const categoryNames = categories.map((entry) => entry.category.name);
+
+    res.json({ book_id, categories: categoryNames });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
