@@ -140,7 +140,7 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: imageErr.message });
     }
 
-    htmlUpload.single("html_content")(req, res, async (htmlErr) => {
+  htmlUpload.single("html_content")(req, res, async (htmlErr) => {
       if (htmlErr) {
         return res.status(400).json({ error: htmlErr.message });
       }
@@ -159,7 +159,7 @@ exports.create = async (req, res) => {
             description,
             summary,
             book_photo,
-            html_content: html_content,
+            html_content,
             categories: {
               create: category_ids.map((id) => ({ category_id: id })),
             },
