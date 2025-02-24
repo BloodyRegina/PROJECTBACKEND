@@ -47,3 +47,28 @@ exports.delete = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getByCategoryId = async (req, res) => {
+  const { category_id } = req.params;
+  if (!category_id) {
+    return res.status(400).json({ error: "category_id is required" });
+  }
+  try {
+    const booksInCategory = await prisma.bookCategory.findMany({
+      where: {
+        category_id: category_id.toString(),
+      },
+      include: {
+        book: true,  // รวมข้อมูลหนังสือทั้งหมด
+      },
+    });
+
+    if (booksInCategory.length === 0) {
+      return res.status(404).json({ message: "No books found in this category" });
+    }
+
+    res.json(booksInCategory);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
