@@ -147,8 +147,8 @@ exports.create = async (req, res) => {
 
       const { title, author, publish_year, description, summary } = req.body;
       const category_ids = req.body.categories.split(",");
-      const book_photo = req.files && req.files.book_photo ? req.files.book_photo[0].filename : null;
-      const html_content = req.files && req.files.html_content ? req.files.html_content[0].filename : null;
+      const book_photo = req.file && req.file.filename ? req.file.filename : null; // ใช้ req.file
+      const html_content = req.file && req.file.filename ? req.file.filename : null; // ใช้ req.file
 
       try {
         const book = await prisma.book.create({
@@ -159,7 +159,7 @@ exports.create = async (req, res) => {
             description,
             summary,
             book_photo,
-            html_content: html_content, // Store HTML file name in database
+            html_content: html_content,
             categories: {
               create: category_ids.map((id) => ({ category_id: id })),
             },
@@ -178,7 +178,7 @@ exports.create = async (req, res) => {
           summary: book.summary,
           html_content: book.html_content
             ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
-            : null, // Create URL for HTML file
+            : null,
         };
 
         res.json(bookResponse);
