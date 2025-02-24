@@ -68,6 +68,9 @@ exports.get = async (req, res) => {
         comment: review.comment,
         review_date: review.review_date,
       })),
+      html_content: book.html_content
+        ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+        : null, // Include HTML file URL
     }));
 
     res.json(booksWithUrls);
@@ -118,6 +121,9 @@ exports.getById = async (req, res) => {
           comment: review.comment,
           review_date: review.review_date,
         })),
+        html_content: book.html_content
+          ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+          : null, // Include HTML file URL
       };
       res.json(bookWithUrl);
     } else {
@@ -141,8 +147,8 @@ exports.create = async (req, res) => {
 
       const { title, author, publish_year, description, summary } = req.body;
       const category_ids = req.body.categories.split(",");
-      const book_photo = req.files && req.files.book_photo ? req.files.book_photo[0].filename : null;
-      const html_content = req.files && req.files.html_content ? req.files.html_content[0].filename : null;
+      const book_photo = req.file && req.file.filename ? req.file.filename : null;
+      const html_content = req.file && req.file.filename ? req.file.filename : null;
 
       try {
         const book = await prisma.book.create({
@@ -170,7 +176,9 @@ exports.create = async (req, res) => {
             ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
             : null,
           summary: book.summary,
-          html_content: book.html_content, // Include HTML file name in response
+          html_content: book.html_content
+            ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+            : null, // Create URL for HTML file
         };
 
         res.json(bookResponse);
@@ -215,6 +223,9 @@ exports.update = async (req, res) => {
           ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
           : null,
         summary: book.summary,
+        html_content: book.html_content
+          ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+          : null, // Include HTML file URL
       };
 
       res.json(bookResponse);
@@ -271,6 +282,9 @@ exports.searchBooks = async (req, res) => {
         ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
         : null,
       summary: book.summary,
+      html_content: book.html_content
+        ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+        : null, // Include HTML file URL
     }));
 
     res.json(booksWithUrls);
@@ -300,6 +314,9 @@ exports.delete = async (req, res) => {
         ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
         : null,
       summary: book.summary,
+      html_content: book.html_content
+        ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+        : null, // Include HTML file URL
     };
 
     res.json(bookResponse);
@@ -309,16 +326,16 @@ exports.delete = async (req, res) => {
 };
 
 exports.getTopBooks = async (req, res) => {
-  const { limit } = req.query; // รับจำนวนหนังสือที่ต้องการแสดงจาก query parameter
+  const { limit } = req.query;
 
   try {
     const topBooks = await prisma.book.findMany({
       orderBy: [
         { added_to_list_count: "desc" },
         { average_rating: "desc" },
-        { review_count: "desc" }
+        { review_count: "desc" },
       ],
-      take: parseInt(limit) || 10, // จำกัดจำนวนหนังสือที่ต้องการแสดง (ค่าเริ่มต้นคือ 10)
+      take: parseInt(limit) || 10,
       include: {
         categories: {
           include: {
@@ -355,6 +372,9 @@ exports.getTopBooks = async (req, res) => {
         comment: review.comment,
         review_date: review.review_date,
       })),
+      html_content: book.html_content
+        ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+        : null, // Include HTML file URL
     }));
 
     res.json(booksWithUrls);
@@ -362,6 +382,8 @@ exports.getTopBooks = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// exports.addReview and exports.incrementAddedToListCount remain unchanged
 
 exports.addReview = async (req, res) => {
   const { book_id, user_id, rating, comment } = req.body;
