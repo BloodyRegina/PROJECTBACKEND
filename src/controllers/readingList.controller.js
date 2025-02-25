@@ -29,16 +29,75 @@ exports.getByUserId = async (req, res) => {
       include: {
         book: {
           include: {
-            reviews: true, // Include reviews for the book
+            reviews: {
+              include: {
+                user: true,
+              },
+            },
           },
         },
+        user: true,
       },
     });
-    res.json(readingList);
+
+    const formattedReadingList = readingList.map((entry) => ({
+      id: entry.id.toString(),
+      user_id: entry.user_id.toString(),
+      book_id: entry.book_id.toString(),
+      status: entry.status,
+      add_date: entry.add_date,
+      start_date: entry.start_date,
+      finish_date: entry.finish_date,
+      book: entry.book
+        ? {
+            book_id: entry.book.book_id.toString(),
+            title: entry.book.title,
+            author: entry.book.author,
+            publish_year: entry.book.publish_year,
+            description: entry.book.description,
+            book_photo: entry.book.book_photo
+              ? `${req.protocol}://${req.get("host")}/images/${entry.book.book_photo}`
+              : null,
+            summary: entry.book.summary,
+            added_to_list_count: entry.book.added_to_list_count,
+            average_rating: entry.book.average_rating,
+            review_count: entry.book.review_count,
+            html_content: entry.book.html_content
+              ? `${req.protocol}://${req.get("host")}/html_books/${entry.book.html_content}`
+              : null,
+            reviews: entry.book.reviews.map((review) => ({
+              review_id: review.review_id.toString(),
+              user: {
+                user_id: review.user.user_id.toString(),
+                username: review.user.username,
+                email: review.user.email,
+              },
+              rating: review.rating,
+              comment: review.comment,
+              review_date: review.review_date,
+            })),
+          }
+        : null,
+      user: entry.user
+        ? {
+            user_id: entry.user.user_id.toString(),
+            username: entry.user.username,
+            email: entry.user.email,
+            picture: entry.user.picture
+              ? `${req.protocol}://${req.get("host")}/profile_pictures/${entry.user.picture}`
+              : null,
+            created_at: entry.user.created_at,
+            updated_at: entry.user.updated_at,
+          }
+        : null,
+    }));
+
+    res.json(formattedReadingList);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // Add a new reading list entry
 exports.add = async (req, res) => {

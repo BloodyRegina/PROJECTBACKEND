@@ -16,6 +16,6 @@ app.get('/top-books/toprating', controller.getTopRatingBooks);
 app.put('/increment-added-to-list/:id',authMiddleware.authenticate , controller.incrementAddedToListCount);
 
 // เส้นทางใหม่สำหรับเพิ่มรีวิว
-app.post('/add-review',authMiddleware.authenticate ,controller.addReview);
+app.post('/add-review',controller.addReview);
 
 module.exports = app;

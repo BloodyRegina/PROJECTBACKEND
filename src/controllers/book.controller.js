@@ -447,6 +447,13 @@ exports.getTopRatingBooks = async (req, res) => {
 exports.addReview = async (req, res) => {
   const { book_id, user_id, rating, comment } = req.body;
 
+  // แปลง rating จาก string เป็น integer
+  const ratingInt = parseInt(rating, 10);  // ใช้ parseInt เพื่อแปลงเป็นตัวเลข
+  
+  if (isNaN(ratingInt)) {
+    return res.status(400).json({ error: "Invalid rating value. Must be an integer." });
+  }
+  
   try {
     const review = await prisma.review.create({
       data: {
@@ -460,7 +467,7 @@ exports.addReview = async (req, res) => {
             user_id: user_id,
           },
         },
-        rating: rating,
+        rating: ratingInt,  // ส่งค่า rating ที่แปลงเป็นตัวเลขแล้ว
         comment: comment,
       },
     });
@@ -476,12 +483,11 @@ exports.addReview = async (req, res) => {
       },
     });
 
-    res.json({ review, book });
+    res.json({ review ,book});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
-
+}
 // ฟังก์ชันเพื่อคำนวณค่าเฉลี่ยของคะแนน
 async function calculateAverageRating(book_id) {
   const reviews = await prisma.review.findMany({
