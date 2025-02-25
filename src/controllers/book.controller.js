@@ -334,7 +334,6 @@ exports.getTopBooks = async (req, res) => {
     const topBooks = await prisma.book.findMany({
       orderBy: [
         { added_to_list_count: "desc" },
-        { average_rating: "desc" },
         { review_count: "desc" },
       ],
       take: parseInt(limit) || 10,
@@ -392,7 +391,6 @@ exports.getTopRatingBooks = async (req, res) => {
     const topBooks = await prisma.book.findMany({
       orderBy: [
         { average_rating: "desc" },
-        { added_to_list_count: "desc" },
         { review_count: "desc" },
       ],
       take: parseInt(limit) || 10,
