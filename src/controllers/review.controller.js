@@ -31,15 +31,16 @@ const getUserMostReview = async (req, res) => {
             }
         });
 
-        // รวมข้อมูล
+        // รวมข้อมูลและแปลงค่า
         const result = topReviewers.map(reviewer => {
             const user = users.find(u => u.user_id === reviewer.user_id);
             return {
-                user_id: reviewer.user_id,
+                user_id: reviewer.user_id.toString(),
                 username: user?.username || 'Unknown',
                 email: user?.email || 'Unknown',
                 picture: user?.picture || null,
-                review_count: reviewer._count.review_id
+                review_count: reviewer._count.review_id,
+                profile_url: `${req.protocol}://${req.get("host")}/users/${reviewer.user_id}` // เพิ่ม URL โปรไฟล์
             };
         });
 
