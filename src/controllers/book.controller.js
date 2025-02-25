@@ -483,7 +483,7 @@ exports.addReview = async (req, res) => {
       },
     });
 
-    res.json({ review ,book});
+    res.json({ review});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
