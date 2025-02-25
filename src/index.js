@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+app.use('/html_books', express.static('/html_books'));
 
 // get port number from environment settings
 require('dotenv').config()
