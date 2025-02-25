@@ -86,12 +86,21 @@ exports.getById = async (req, res) => {
         },
         reviews: {
           include: {
-            user: true, // Include user details in reviews
+            user: {
+              select: {
+                user_id: true,
+                username: true,
+                email: true,
+                picture: true, // ดึง picture มาแน่ๆ
+              },
+            },
           },
         },
       },
     });
-
+    
+    console.log(book.reviews);
+    
     if (book) {
       const bookWithUrl = {
         _id: book.book_id.toString(),
@@ -110,6 +119,9 @@ exports.getById = async (req, res) => {
             user_id: review.user.user_id.toString(),
             username: review.user.username,
             email: review.user.email,
+            pictureUrl: review.user.picture
+              ? `${req.protocol}://${req.get("host")}/userpictures/${review.user.picture}`
+              : null,
           },
           rating: review.rating,
           comment: review.comment,
@@ -117,8 +129,9 @@ exports.getById = async (req, res) => {
         })),
         html_content: book.html_content
           ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
-          : null, // Include HTML file URL
+          : null,
       };
+      
       res.json(bookWithUrl);
     } else {
       res.status(404).json({ error: "Book not found" });
@@ -127,6 +140,7 @@ exports.getById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 exports.create = async (req, res) => {
   upload(req, res, async (err) => {
