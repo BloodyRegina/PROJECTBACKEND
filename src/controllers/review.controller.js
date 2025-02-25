@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // ฟังก์ชันหาผู้ใช้ที่มีจำนวนรีวิวมากที่สุด
-const getUserMostReview = async (req, res) => {
+exports.getUserMostReview = async (req, res) => {
     try {
         const topReviewers = await prisma.review.groupBy({
             by: ['user_id'],
@@ -32,23 +32,21 @@ const getUserMostReview = async (req, res) => {
         });
 
         // รวมข้อมูลและแปลงค่า
-        const result = topReviewers.map(reviewer => {
+        const usersWithUrls = topReviewers.map(reviewer => {
             const user = users.find(u => u.user_id === reviewer.user_id);
             return {
+                ...user,
                 user_id: reviewer.user_id.toString(),
-                username: user?.username || 'Unknown',
-                email: user?.email || 'Unknown',
-                picture: user?.picture || null,
                 review_count: reviewer._count.review_id,
-                profile_url: `${req.protocol}://${req.get("host")}/users/${reviewer.user_id}` // เพิ่ม URL โปรไฟล์
+                pictureUrl: user?.picture
+                    ? `${req.protocol}://${req.get("host")}/userpictures/${user.picture}`
+                    : null,
             };
         });
 
-        res.json(result);
+        res.json(usersWithUrls);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ error: error.message });
     }
 };
-
-module.exports = { getUserMostReview };
