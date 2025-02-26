@@ -50,6 +50,7 @@ exports.get = async (req, res) => {
         ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
         : null,
       summary: book.summary,
+      added_to_list_count:book.added_to_list_count,
       categories: book.categories.map((cat) => cat.category),
       reviews: book.reviews.map((review) => ({
         review_id: review.review_id.toString(),
