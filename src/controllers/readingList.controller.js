@@ -109,6 +109,19 @@ exports.add = async (req, res) => {
       return res.status(400).json({ error: "Missing user_id or book_id" });
     }
 
+    // 🔍 ตรวจสอบว่าหนังสือเล่มนี้มีอยู่ในคลังของผู้ใช้หรือยัง
+    const existingEntry = await prisma.readingList.findFirst({
+      where: {
+        user_id,
+        book_id,
+      },
+    });
+
+    if (existingEntry) {
+      return res.status(400).json({ error: "หนังสือเล่มนี้อยู่ในคลังแล้ว 📚" });
+    }
+
+    // ✅ ถ้ายังไม่มี ให้เพิ่มหนังสือเข้าไป
     const newReadingList = await prisma.readingList.create({
       data: {
         user_id,
