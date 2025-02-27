@@ -104,7 +104,7 @@ exports.getById = async (req, res) => {
     
     if (book) {
       const bookWithUrl = {
-        _id: book.book_id.toString(),
+        book_id: book.book_id.toString(),
         title: book.title,
         author: book.author,
         publish_year: book.publish_year,
@@ -419,6 +419,7 @@ exports.getTopRatingBooks = async (req, res) => {
         ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
         : null,
       summary: book.summary,
+      averageRating: book.average_rating,
       categories: book.categories.map((cat) => cat.category),
       reviews: book.reviews.map((review) => ({
         review_id: review.review_id.toString(),

@@ -43,16 +43,16 @@ enum ReadingStatus {
 }
 
 model ReadingList {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  user_id     String        @db.ObjectId
-  book_id     String        @db.ObjectId
-  status      ReadingStatus @default(TO_READ)
-  add_date    DateTime      @default(now())
+  reading_id String @id @default(auto()) @map("_id") @db.ObjectId // เปลี่ยนจาก id เป็น reading_id
+  user_id    String @db.ObjectId
+  book_id    String @db.ObjectId
+  status     ReadingStatus @default(TO_READ)
+  add_date   DateTime @default(now())
   finish_date DateTime?
-  start_date  DateTime?
+  start_date DateTime?
 
-  user        User          @relation(fields: [user_id], references: [user_id])
-  book        Book          @relation(fields: [book_id], references: [book_id])
+  user User @relation(fields: [user_id], references: [user_id])
+  book Book @relation(fields: [book_id], references: [book_id])
 
   @@unique([user_id, book_id])
 }

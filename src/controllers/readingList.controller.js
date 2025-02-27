@@ -8,7 +8,7 @@ exports.getAll = async (req, res) => {
       include: {
         book: {
           include: {
-            reviews: true, // Include reviews for the book
+            reviews: true,
           },
         },
         user: true,
@@ -41,7 +41,7 @@ exports.getByUserId = async (req, res) => {
     });
 
     const formattedReadingList = readingList.map((entry) => ({
-      id: entry.id.toString(),
+      reading_id: entry.reading_id.toString(), // เปลี่ยนจาก id เป็น reading_id
       user_id: entry.user_id.toString(),
       book_id: entry.book_id.toString(),
       status: entry.status,
@@ -98,11 +98,10 @@ exports.getByUserId = async (req, res) => {
   }
 };
 
-
 // Add a new reading list entry
 exports.add = async (req, res) => {
   try {
-    console.log("📌 Received request body:", req.body); // ดูค่าที่ส่งมาว่าครบไหม
+    console.log("📌 Received request body:", req.body);
 
     const { user_id, book_id, status, finish_date, start_date } = req.body;
 
@@ -127,15 +126,13 @@ exports.add = async (req, res) => {
   }
 };
 
-
-
 // Update a reading list entry
 exports.update = async (req, res) => {
-  const { user_id, book_id } = req.params;
+  const { reading_id } = req.params; // เปลี่ยนจาก user_id และ book_id เป็น reading_id
   const { status, finish_date, start_date } = req.body;
   try {
     const updatedReadingList = await prisma.readingList.update({
-      where: { user_id_book_id: { user_id, book_id } },
+      where: { reading_id }, // เปลี่ยนจาก user_id_book_id เป็น reading_id
       data: {
         status,
         finish_date: finish_date ? new Date(finish_date) : null,
@@ -148,31 +145,66 @@ exports.update = async (req, res) => {
   }
 };
 
-exports.startReading = async (req, res) => {
-  const { id } = req.params;
+exports.getReadingListByUserAndBook = async (req, res) => {
+  const { user_id, book_id } = req.query;
   try {
+    const readingListEntry = await prisma.readingList.findFirst({
+      where: {
+        user_id,
+        book_id,
+      },
+    });
+
+    if (!readingListEntry) {
+      return res.status(404).json({ error: "Reading list entry not found" });
+    }
+
+    res.json(readingListEntry);
+  } catch (error) {
+    console.error("Error fetching reading list entry:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Start reading a book
+exports.startReading = async (req, res) => {
+  const { reading_id } = req.params;
+
+  try {
+    // ตรวจสอบว่า reading_id มีอยู่ในฐานข้อมูลหรือไม่
+    const existingEntry = await prisma.readingList.findUnique({
+      where: { reading_id: reading_id },
+    });
+
+    if (!existingEntry) {
+      return res.status(404).json({ error: "Reading list entry not found" });
+    }
+
+    // อัปเดตสถานะและวันที่เริ่มอ่าน
     const updatedReadingList = await prisma.readingList.update({
-      where: { id },
+      where: { reading_id: reading_id },
       data: {
         status: "READING",
         start_date: new Date(),
       },
     });
+
     res.json({
       message: "Status updated to reading",
       updatedReadingList,
     });
   } catch (error) {
-    res.status(404).json({ error: "Reading list entry not found or invalid id" });
+    console.error("Error updating reading list:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // Mark a reading list entry as completed
 exports.finishReading = async (req, res) => {
-  const { id } = req.params;
+  const { reading_id } = req.params; // เปลี่ยนจาก id เป็น reading_id
   try {
     const updatedReadingList = await prisma.readingList.update({
-      where: { id },
+      where: { reading_id }, // เปลี่ยนจาก id เป็น reading_id
       data: {
         status: "COMPLETED",
         finish_date: new Date(),
@@ -189,10 +221,10 @@ exports.finishReading = async (req, res) => {
 
 // Delete a reading list entry
 exports.delete = async (req, res) => {
-  const { user_id, book_id } = req.params;
+  const { reading_id } = req.params; // เปลี่ยนจาก user_id และ book_id เป็น reading_id
   try {
     const deletedReadingList = await prisma.readingList.delete({
-      where: { user_id_book_id: { user_id, book_id } },
+      where: { reading_id }, // เปลี่ยนจาก user_id_book_id เป็น reading_id
     });
     res.json(deletedReadingList);
   } catch (error) {
