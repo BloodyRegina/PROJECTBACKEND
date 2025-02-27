@@ -53,13 +53,14 @@ exports.getByCategoryId = async (req, res) => {
   if (!category_id) {
     return res.status(400).json({ error: "category_id is required" });
   }
+
   try {
     const booksInCategory = await prisma.bookCategory.findMany({
       where: {
         category_id: category_id.toString(),
       },
       include: {
-        book: true,  // รวมข้อมูลหนังสือทั้งหมด
+        book: true, // รวมข้อมูลหนังสือทั้งหมด
       },
     });
 
@@ -67,7 +68,28 @@ exports.getByCategoryId = async (req, res) => {
       return res.status(404).json({ message: "No books found in this category" });
     }
 
-    res.json(booksInCategory);
+    // แปลงข้อมูลหนังสือให้มี URL สำหรับภาพและ HTML content
+    const booksWithUrls = booksInCategory.map((bookCategory) => {
+      const book = bookCategory.book;
+      return {
+        book_id: book.book_id.toString(),
+        title: book.title,
+        author: book.author,
+        publish_year: book.publish_year,
+        description: book.description,
+        book_photo: book.book_photo
+          ? `${req.protocol}://${req.get("host")}/images/${book.book_photo}`
+          : null,
+        summary: book.summary,
+        categories: [], // หากต้องการเพิ่มข้อมูล category สามารถปรับได้
+        reviews: [], // หากต้องการเพิ่มข้อมูล review สามารถปรับได้
+        html_content: book.html_content
+          ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
+          : null,
+      };
+    });
+
+    res.json(booksWithUrls);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
