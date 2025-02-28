@@ -193,22 +193,32 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  upload.single("book_photo")(req, res, async (err) => {
+  upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
     }
 
     const { id } = req.params;
-    const { description, summary, category_ids } = req.body;
-    const book_photo = req.file ? req.file.filename : null;
+    const { title, author, publish_year, description, summary, categories } = req.body;
+
+    // ดึงค่าไฟล์ที่อัปโหลด
+    const book_photo = req.files["book_photo"] ? req.files["book_photo"][0].filename : null;
+    const html_content = req.files["html_content"] ? req.files["html_content"][0].filename : null;
+
+    // ตรวจสอบ categories (เผื่อกรณีไม่ได้ส่งมา)
+    const category_ids = categories ? categories.split(",") : [];
 
     try {
       const book = await prisma.book.update({
         where: { book_id: id },
         data: {
+          title,
+          author,
+          publish_year: publish_year ? parseInt(publish_year) : undefined,
           description,
           summary,
           book_photo,
+          html_content,
           categories: {
             deleteMany: {},
             create: category_ids.map((id) => ({ category_id: id })),
@@ -228,7 +238,7 @@ exports.update = async (req, res) => {
         summary: book.summary,
         html_content: book.html_content
           ? `${req.protocol}://${req.get("host")}/html_books/${book.html_content}`
-          : null, // Include HTML file URL
+          : null,
       };
 
       res.json(bookResponse);
@@ -237,6 +247,7 @@ exports.update = async (req, res) => {
     }
   });
 };
+
 
 exports.searchBooks = async (req, res) => {
   const { title, author, publish_year } = req.params;
